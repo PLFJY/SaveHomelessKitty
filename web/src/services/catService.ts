@@ -19,3 +19,7 @@ export const createCat = async (payload: CatUpsertRequest): Promise<{ id: string
 export const updateCat = async (id: string, payload: CatUpsertRequest): Promise<void> => {
   await api.put(`/api/admin/cats/${id}`, payload);
 };
+
+export const deleteCat = async (id: string): Promise<void> => {
+  await api.delete(`/api/admin/cats/${id}`);
+};

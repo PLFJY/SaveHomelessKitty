@@ -6,6 +6,7 @@ import { getDevices } from "../services/deviceService";
 import { getFeedLogs } from "../services/feedLogService";
 import { FeedResult, DeviceStatus } from "../types/api";
 import { getTodayRangeUtc } from "../utils/date";
+import { useI18n } from "../context/I18nContext";
 
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -15,6 +16,7 @@ const Dashboard: React.FC = () => {
     activeCats: 0,
     onlineDevices: 0
   });
+  const { t } = useI18n();
 
   useEffect(() => {
     const load = async () => {
@@ -55,38 +57,38 @@ const Dashboard: React.FC = () => {
   const cards = useMemo(
     () => [
       {
-        title: "Today Feeds",
+        title: t("dashboard.todayFeeds"),
         value: stats.feedCount,
-        helper: "Successful feedings"
+        helper: t("dashboard.feedsHelper")
       },
       {
-        title: "Today Portion",
+        title: t("dashboard.todayPortion"),
         value: stats.feedTotal,
         suffix: "g",
-        helper: "Total grams delivered"
+        helper: t("dashboard.portionHelper")
       },
       {
-        title: "Active Cats",
+        title: t("dashboard.activeCats"),
         value: stats.activeCats,
-        helper: "Tracked and active"
+        helper: t("dashboard.activeHelper")
       },
       {
-        title: "Online Devices",
+        title: t("dashboard.onlineFeeders"),
         value: stats.onlineDevices,
-        helper: "Healthy + active"
+        helper: t("dashboard.onlineHelper")
       }
     ],
-    [stats]
+    [stats, t]
   );
 
   return (
     <div>
       <div className="page-title">
         <Typography.Title level={2} style={{ margin: 0 }}>
-          Dashboard
+          {t("dashboard.title")}
         </Typography.Title>
         <Typography.Paragraph>
-          Overview for daily operations, teacher reviews, and backup access.
+          {t("dashboard.subtitle")}
         </Typography.Paragraph>
       </div>
       <Spin spinning={loading}>
@@ -99,24 +101,22 @@ const Dashboard: React.FC = () => {
         </Row>
         <Row gutter={[20, 20]} style={{ marginTop: 20 }}>
           <Col xs={24} lg={14}>
-            <Card className="section-card" title="System Notes">
+            <Card className="section-card" title={t("dashboard.systemNotes")}>
               <Typography.Paragraph>
-                This console provides a stable view for daily management and on-site demos. Data is
-                pulled directly from the ASP.NET Core REST API.
+                {t("dashboard.systemNotesBody")}
               </Typography.Paragraph>
               <Typography.Paragraph type="secondary">
-                Use the left navigation to manage cats, devices, and audit feed logs.
+                {t("dashboard.systemNotesHint")}
               </Typography.Paragraph>
             </Card>
           </Col>
           <Col xs={24} lg={10}>
-            <Card className="section-card" title="Operational Focus">
+            <Card className="section-card" title={t("dashboard.operationalFocus")}>
               <Typography.Paragraph>
-                Keep devices online and verify daily limits. Review feed logs when devices report
-                errors or misses.
+                {t("dashboard.operationalBody")}
               </Typography.Paragraph>
               <Typography.Paragraph type="secondary">
-                Configure device-specific feed rules from each device detail page.
+                {t("dashboard.operationalHint")}
               </Typography.Paragraph>
             </Card>
           </Col>

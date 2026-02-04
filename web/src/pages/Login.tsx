@@ -1,7 +1,9 @@
 import React from "react";
-import { Button, Card, Form, Input, Select, Typography } from "antd";
+import { Button, Card, Form, Input, Typography } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth, UserRole } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
+import { login as loginRequest } from "../services/authService";
+import { useI18n } from "../context/I18nContext";
 
 interface LocationState {
   from?: { pathname: string };
@@ -13,35 +15,41 @@ const Login: React.FC = () => {
   const { login } = useAuth();
   const state = location.state as LocationState | null;
   const redirectTo = state?.from?.pathname || "/";
+  const [loading, setLoading] = React.useState(false);
+  const { t } = useI18n();
 
-  const onFinish = (values: { name: string; role: UserRole }) => {
-    login(values.name, values.role);
-    navigate(redirectTo, { replace: true });
+  const onFinish = async (values: { username: string; password: string }) => {
+    setLoading(true);
+    try {
+      const session = await loginRequest({
+        username: values.username,
+        password: values.password
+      });
+      login(session);
+      navigate(redirectTo, { replace: true });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div style={{ display: "flex", justifyContent: "center", paddingTop: 80 }}>
       <Card style={{ width: 380 }} className="section-card">
         <Typography.Title level={3} style={{ marginTop: 0 }}>
-          Sign in
+          {t("auth.signIn")}
         </Typography.Title>
         <Typography.Paragraph type="secondary">
-          Use admin or viewer role. Backend auth can be plugged in later.
+          {t("auth.signInHint")}
         </Typography.Paragraph>
-        <Form layout="vertical" onFinish={onFinish} initialValues={{ role: "viewer" }}>
-          <Form.Item label="Name" name="name" rules={[{ required: true, message: "Enter your name" }]}>
-            <Input placeholder="Admin" />
+        <Form layout="vertical" onFinish={onFinish}>
+          <Form.Item label={t("auth.username")} name="username" rules={[{ required: true, message: t("auth.username") }]}>
+            <Input placeholder="admin" />
           </Form.Item>
-          <Form.Item label="Role" name="role" rules={[{ required: true }]}>
-            <Select
-              options={[
-                { label: "Admin", value: "admin" },
-                { label: "Viewer", value: "viewer" }
-              ]}
-            />
+          <Form.Item label={t("auth.password")} name="password" rules={[{ required: true, message: t("auth.password") }]}>
+            <Input.Password placeholder="••••••••" />
           </Form.Item>
-          <Button type="primary" htmlType="submit" block>
-            Continue
+          <Button type="primary" htmlType="submit" block loading={loading}>
+            {t("auth.continue")}
           </Button>
         </Form>
       </Card>

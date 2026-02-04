@@ -10,6 +10,8 @@ import DeviceDetail from "./pages/Devices/DeviceDetail";
 import FeedLogs from "./pages/Logs/FeedLogs";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import Settings from "./pages/Settings";
+import AccessControl from "./pages/AccessControl";
 
 const App: React.FC = () => {
   return (
@@ -30,6 +32,8 @@ const App: React.FC = () => {
         <Route path="devices" element={<DeviceList />} />
         <Route path="devices/:id" element={<DeviceDetail />} />
         <Route path="logs" element={<FeedLogs />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="access" element={<AccessControl />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

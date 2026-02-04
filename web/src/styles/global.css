@@ -4,7 +4,7 @@
   --brand-700: #146c94;
   --brand-500: #19a7ce;
   --brand-200: #cfe9f5;
-  --accent-500: #5c8d89;
+  --accent-500: #146c94;
   --surface-0: #f5f7f9;
   --surface-1: #ffffff;
   --surface-2: #f0f4f7;
@@ -12,6 +12,29 @@
   --text-600: #47525d;
   --border-200: #e3e8ee;
   --shadow-1: 0 12px 30px rgba(16, 33, 41, 0.08);
+  --app-bg:
+    radial-gradient(circle at 10% 20%, rgba(25, 167, 206, 0.18), transparent 55%),
+    radial-gradient(circle at 80% 0%, rgba(92, 141, 137, 0.18), transparent 50%),
+    linear-gradient(120deg, #f5f7f9 0%, #eef4f7 100%);
+  --sider-bg: linear-gradient(160deg, #0b2f3b 0%, #0f3a4a 35%, #124e66 100%);
+  --header-bg: rgba(255, 255, 255, 0.9);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #0d1418;
+  --surface-1: #121b21;
+  --surface-2: #18232a;
+  --text-900: #eef2f5;
+  --text-600: #a7b2bd;
+  --border-200: #22323b;
+  --shadow-1: 0 12px 30px rgba(0, 0, 0, 0.35);
+  --app-bg:
+    radial-gradient(circle at 15% 20%, rgba(20, 108, 148, 0.25), transparent 55%),
+    radial-gradient(circle at 85% 0%, rgba(16, 44, 58, 0.6), transparent 50%),
+    linear-gradient(135deg, #0d1418 0%, #101a20 100%);
+  --sider-bg: linear-gradient(160deg, #081c23 0%, #0b2a35 40%, #0e3b4b 100%);
+  --header-bg: rgba(18, 27, 33, 0.92);
 }
 
 * {
@@ -23,11 +46,27 @@ body {
   font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--text-900);
   background-color: var(--surface-0);
-  background-image:
-    radial-gradient(circle at 10% 20%, rgba(25, 167, 206, 0.18), transparent 55%),
-    radial-gradient(circle at 80% 0%, rgba(92, 141, 137, 0.18), transparent 50%),
-    linear-gradient(120deg, #f5f7f9 0%, #eef4f7 100%);
+  background-image: var(--app-bg);
   min-height: 100vh;
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.18), transparent 50%),
+    radial-gradient(circle at 80% 0%, rgba(20, 108, 148, 0.22), transparent 55%);
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  mix-blend-mode: soft-light;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
 }
 
 h1, h2, h3, h4, h5 {
@@ -45,8 +84,20 @@ h1, h2, h3, h4, h5 {
 }
 
 .app-sider {
-  background: linear-gradient(160deg, #0b2f3b 0%, #0f3a4a 35%, #124e66 100%);
+  background: var(--sider-bg);
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.08);
+  transition: background 0.35s ease, box-shadow 0.35s ease;
+}
+
+.app-sider-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.app-sider-bottom {
+  padding-bottom: 12px;
 }
 
 .app-logo {
@@ -65,7 +116,7 @@ h1, h2, h3, h4, h5 {
 }
 
 .app-header {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--header-bg);
   backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--border-200);
   display: flex;
@@ -73,6 +124,7 @@ h1, h2, h3, h4, h5 {
   justify-content: space-between;
   padding: 0 24px;
   height: 64px;
+  transition: background 0.35s ease, border-color 0.35s ease;
 }
 
 .app-content {
@@ -105,6 +157,7 @@ h1, h2, h3, h4, h5 {
   border: 1px solid rgba(15, 60, 78, 0.08);
   overflow: hidden;
   animation: rise 0.45s ease both;
+  transition: box-shadow 0.35s ease, border-color 0.35s ease, background-color 0.35s ease;
 }
 
 .stat-card .ant-statistic-title {
@@ -156,6 +209,7 @@ h1, h2, h3, h4, h5 {
   border-radius: 16px;
   border: 1px solid var(--border-200);
   box-shadow: var(--shadow-1);
+  transition: box-shadow 0.35s ease, border-color 0.35s ease, background-color 0.35s ease;
 }
 
 .image-grid {
@@ -175,6 +229,38 @@ h1, h2, h3, h4, h5 {
 
 .fade-in {
   animation: fade 0.4s ease both;
+}
+
+a {
+  color: var(--accent-500);
+}
+
+a:hover {
+  color: var(--accent-500);
+  opacity: 0.85;
+}
+
+:root.theme-transition * {
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease,
+    fill 0.35s ease,
+    stroke 0.35s ease;
+}
+
+:root.theme-transition body::after {
+  opacity: 0.16;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-transition * {
+    transition: none !important;
+  }
+  body::after {
+    transition: none !important;
+  }
 }
 
 @keyframes rise {

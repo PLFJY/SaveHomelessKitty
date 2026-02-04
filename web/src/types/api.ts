@@ -21,6 +21,11 @@ export interface DeviceSummary {
   ipAddress?: string | null;
   firmwareVersion?: string | null;
   lastSeenAtUtc?: string | null;
+  foodRemainingGrams?: number | null;
+  foodDispensedTodayGrams?: number | null;
+  foodDispensedTotalGrams?: number | null;
+  pairingCodeExpiresAtUtc?: string | null;
+  hasPairingCode?: boolean;
   note?: string | null;
 }
 
@@ -78,6 +83,19 @@ export interface DeviceUpdateRequest {
   location?: string | null;
   isActive: boolean;
   note?: string | null;
+}
+
+export interface DeviceCreateRequest {
+  deviceCode: string;
+  name?: string | null;
+  location?: string | null;
+  isActive: boolean;
+  note?: string | null;
+}
+
+export interface PairingCodeResponse {
+  code: string;
+  expiresAtUtc?: string | null;
 }
 
 export enum DeviceStatus {

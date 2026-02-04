@@ -38,6 +38,26 @@ public class TerminalHeartbeatRequest
     public string FirmwareVersion { get; set; } = string.Empty;
 
     /// <summary>
+    /// Pairing code for device authentication.
+    /// </summary>
+    public string? PairingCode { get; set; }
+
+    /// <summary>
+    /// Remaining food in grams reported by the device.
+    /// </summary>
+    public int? FoodRemainingGrams { get; set; }
+
+    /// <summary>
+    /// Food dispensed today in grams reported by the device.
+    /// </summary>
+    public int? FoodDispensedTodayGrams { get; set; }
+
+    /// <summary>
+    /// Total food dispensed in grams reported by the device.
+    /// </summary>
+    public int? FoodDispensedTotalGrams { get; set; }
+
+    /// <summary>
     /// UTC time when the heartbeat was generated.
     /// </summary>
     public DateTime? TimestampUtc { get; set; }

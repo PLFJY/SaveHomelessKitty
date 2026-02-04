@@ -1,23 +1,28 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Card, Descriptions, Form, Input, InputNumber, Spin, Switch, Typography, message } from "antd";
+import { App, Button, Card, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Spin, Switch, Tag, Typography } from "antd";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { getDevice, updateDevice } from "../../services/deviceService";
+import { deleteDevice, generatePairingCode, getDevice, updateDevice } from "../../services/deviceService";
 import { getFeedRules, upsertDeviceRule } from "../../services/feedRuleService";
-import type { DeviceSummary, FeedRule } from "../../types/api";
+import type { DeviceSummary } from "../../types/api";
 import { RuleScope } from "../../types/api";
 import { deviceStatusLabel } from "../../utils/status";
 import { formatUtc } from "../../utils/date";
+import { useI18n } from "../../context/I18nContext";
 
 const DeviceDetail: React.FC = () => {
   const { id } = useParams();
-  const { isAdmin } = useAuth();
+  const { hasPermission } = useAuth();
   const [device, setDevice] = useState<DeviceSummary | null>(null);
-  const [rules, setRules] = useState<FeedRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deviceForm] = Form.useForm();
   const [ruleForm] = Form.useForm();
+  const { message } = App.useApp();
+  const [pairingOpen, setPairingOpen] = useState(false);
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [pairingExpires, setPairingExpires] = useState<string | null>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     const load = async () => {
@@ -26,7 +31,6 @@ const DeviceDetail: React.FC = () => {
       try {
         const [deviceData, ruleData] = await Promise.all([getDevice(id), getFeedRules()]);
         setDevice(deviceData);
-        setRules(ruleData);
         deviceForm.setFieldsValue({
           name: deviceData.name,
           location: deviceData.location,
@@ -39,39 +43,58 @@ const DeviceDetail: React.FC = () => {
         const globalRule = ruleData.find((rule) => rule.scopeType === RuleScope.Global);
         const fallback = deviceRule || globalRule;
         ruleForm.setFieldsValue({
-          name: deviceRule?.name || deviceData.name || "Device Rule",
+          name: deviceRule?.name || deviceData.name || t("feeders.ruleTitle"),
           dailyLimitCount: fallback?.dailyLimitCount ?? 10,
           cooldownSeconds: fallback?.cooldownSeconds ?? 900,
           isActive: deviceRule?.isActive ?? true
         });
       } catch {
         setDevice(null);
-        setRules([]);
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [id, deviceForm, ruleForm]);
+  }, [id, deviceForm, ruleForm, t]);
 
   const deviceMeta = useMemo(() => {
     if (!device) return [];
     return [
-      { label: "Device Code", value: device.deviceCode },
-      { label: "Status", value: deviceStatusLabel(device.status) },
-      { label: "Last Heartbeat", value: formatUtc(device.lastSeenAtUtc) },
-      { label: "Battery", value: device.batteryPercent != null ? `${device.batteryPercent}%` : "-" },
-      { label: "Signal", value: device.signalStrength != null ? `${device.signalStrength} dBm` : "-" },
-      { label: "IP Address", value: device.ipAddress || "-" }
+      { label: t("feeders.deviceCode"), value: device.deviceCode },
+      { label: t("common.status"), value: deviceStatusLabel(device.status, t) },
+      { label: t("feeders.lastHeartbeat"), value: formatUtc(device.lastSeenAtUtc) },
+      { label: t("feeders.battery"), value: device.batteryPercent != null ? `${device.batteryPercent}%` : "-" },
+      { label: t("feeders.signal"), value: device.signalStrength != null ? `${device.signalStrength} dBm` : "-" },
+      { label: t("feeders.ip"), value: device.ipAddress || "-" },
+      {
+        label: t("feeders.foodRemainingLabel"),
+        value: device.foodRemainingGrams != null ? `${device.foodRemainingGrams} g` : "-"
+      },
+      {
+        label: t("feeders.dispensedToday"),
+        value: device.foodDispensedTodayGrams != null ? `${device.foodDispensedTodayGrams} g` : "-"
+      },
+      {
+        label: t("feeders.dispensedTotal"),
+        value: device.foodDispensedTotalGrams != null ? `${device.foodDispensedTotalGrams} g` : "-"
+      },
+      {
+        label: t("feeders.pairingTitle"),
+        value: device.hasPairingCode
+          ? device.pairingCodeExpiresAtUtc
+            ? `${t("common.active")} (${t("feeders.pairingExpires")} ${formatUtc(device.pairingCodeExpiresAtUtc)})`
+            : t("common.active")
+          : t("feeders.notPaired")
+      }
     ];
-  }, [device]);
+  }, [device, t]);
 
   const handleDeviceSave = async (values: { name: string; location: string; note: string; isActive: boolean }) => {
     if (!id) return;
     setSaving(true);
     try {
       await updateDevice(id, values);
-      message.success("Device updated");
+      message.success(t("common.saved"));
     } finally {
       setSaving(false);
     }
@@ -89,27 +112,55 @@ const DeviceDetail: React.FC = () => {
         cooldownSeconds: values.cooldownSeconds,
         isActive: values.isActive
       });
-      message.success("Feed rule saved");
+      message.success(t("feeders.ruleSaved"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id) return;
+    setSaving(true);
+    try {
+      await deleteDevice(id);
+      message.success(t("common.deleted"));
+      window.location.href = "/devices";
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePairing = async () => {
+    if (!id) return;
+    setSaving(true);
+    try {
+      const response = await generatePairingCode(id);
+      setPairingCode(response.code);
+      setPairingExpires(response.expiresAtUtc ?? null);
+      setPairingOpen(true);
+      message.success(t("feeders.pairingGenerated"));
+      const deviceData = await getDevice(id);
+      setDevice(deviceData);
     } finally {
       setSaving(false);
     }
   };
 
   if (!id) {
-    return <Typography.Text>Missing device id.</Typography.Text>;
+    return <Typography.Text>{t("common.notFound")}</Typography.Text>;
   }
 
   return (
     <Spin spinning={loading}>
       <div className="page-title">
         <Typography.Title level={2} style={{ margin: 0 }}>
-          Device Detail
+          {t("feeders.detailTitle")}
         </Typography.Title>
-        <Typography.Paragraph>Health status and feed rule configuration.</Typography.Paragraph>
+        <Typography.Paragraph>{t("feeders.detailSubtitle")}</Typography.Paragraph>
       </div>
       {device ? (
         <div style={{ display: "grid", gap: 20 }}>
-          <Card className="section-card" title="Device Overview">
+          <Card className="section-card" title={t("feeders.overview")}>
             <Descriptions column={3} layout="vertical">
               {deviceMeta.map((item) => (
                 <Descriptions.Item key={item.label} label={item.label}>
@@ -119,59 +170,124 @@ const DeviceDetail: React.FC = () => {
             </Descriptions>
           </Card>
 
-          <Card className="section-card" title="Device Settings">
+          <Card className="section-card" title={t("feeders.settings")}>
             <Form
               layout="vertical"
               form={deviceForm}
               onFinish={handleDeviceSave}
-              disabled={!isAdmin}
+              disabled={!hasPermission("devices.write")}
             >
-              <Form.Item label="Device Name" name="name" rules={[{ required: true }]}> 
-                <Input placeholder="North Gate Feeder" />
+              <Form.Item label={t("feeders.name")} name="name" rules={[{ required: true }]}> 
+                <Input placeholder={t("feeders.name")} />
               </Form.Item>
-              <Form.Item label="Location" name="location">
-                <Input placeholder="Building A, west corner" />
+              <Form.Item label={t("feeders.location")} name="location">
+                <Input placeholder={t("feeders.location")} />
               </Form.Item>
-              <Form.Item label="Admin Note" name="note">
+              <Form.Item label={t("feeders.adminNote")} name="note">
                 <Input.TextArea rows={3} />
               </Form.Item>
-              <Form.Item label="Active" name="isActive" valuePropName="checked">
+              <Form.Item label={t("common.active")} name="isActive" valuePropName="checked">
                 <Switch />
               </Form.Item>
-              <Button type="primary" htmlType="submit" loading={saving} disabled={!isAdmin}>
-                Save Device
-              </Button>
-              {!isAdmin ? (
-                <Typography.Text type="secondary" style={{ marginLeft: 12 }}>
-                  Viewer role is read-only.
-                </Typography.Text>
-              ) : null}
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <Button type="primary" htmlType="submit" loading={saving} disabled={!hasPermission("devices.write")}>
+                  {t("common.save")}
+                </Button>
+                {hasPermission("devices.write") ? (
+                  <Popconfirm
+                    title={t("feeders.deleteConfirmTitle")}
+                    description={t("feeders.deleteConfirmHint")}
+                    onConfirm={handleDelete}
+                  >
+                    <Button danger loading={saving}>
+                      {t("common.delete")}
+                    </Button>
+                  </Popconfirm>
+                ) : null}
+                {!hasPermission("devices.write") ? (
+                  <Typography.Text type="secondary" style={{ marginLeft: 12 }}>
+                    {t("access.noPermission")}
+                  </Typography.Text>
+                ) : null}
+              </div>
             </Form>
           </Card>
 
-          <Card className="section-card" title="Feed Rule (Device Scope)">
-            <Form layout="vertical" form={ruleForm} onFinish={handleRuleSave} disabled={!isAdmin}>
-              <Form.Item label="Rule Name" name="name">
-                <Input placeholder="Device Rule" />
+          <Card className="section-card" title={t("feeders.pairingTitle")}>
+            <Typography.Paragraph type="secondary">
+              {t("feeders.pairingHint")}
+            </Typography.Paragraph>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <Tag color={device.hasPairingCode ? "green" : "default"}>
+                {device.hasPairingCode ? t("feeders.paired") : t("feeders.notPaired")}
+              </Tag>
+              {device.pairingCodeExpiresAtUtc ? (
+                <Typography.Text type="secondary">
+                  {t("feeders.pairingExpires")}: {formatUtc(device.pairingCodeExpiresAtUtc)}
+                </Typography.Text>
+              ) : null}
+            </div>
+            {hasPermission("devices.pair") ? (
+              <Button type="primary" onClick={handlePairing} loading={saving} style={{ marginTop: 12 }}>
+                {device.hasPairingCode ? t("feeders.pairingRotate") : t("feeders.pairingGenerate")}
+              </Button>
+            ) : (
+              <Typography.Text type="secondary" style={{ display: "block", marginTop: 12 }}>
+                {t("access.noPermission")}
+              </Typography.Text>
+            )}
+          </Card>
+
+          <Card className="section-card" title={t("feeders.ruleTitle")}>
+            <Form layout="vertical" form={ruleForm} onFinish={handleRuleSave} disabled={!hasPermission("feedrules.write")}>
+              <Form.Item label={t("feeders.ruleName")} name="name">
+                <Input placeholder={t("feeders.ruleTitle")} />
               </Form.Item>
-              <Form.Item label="Daily Limit" name="dailyLimitCount" rules={[{ required: true }]}>
+              <Form.Item label={t("feeders.ruleLimit")} name="dailyLimitCount" rules={[{ required: true }]}>
                 <InputNumber min={1} style={{ width: "100%" }} />
               </Form.Item>
-              <Form.Item label="Cooldown (seconds)" name="cooldownSeconds" rules={[{ required: true }]}>
+              <Form.Item label={t("feeders.ruleCooldown")} name="cooldownSeconds" rules={[{ required: true }]}>
                 <InputNumber min={60} step={60} style={{ width: "100%" }} />
               </Form.Item>
-              <Form.Item label="Active" name="isActive" valuePropName="checked">
+              <Form.Item label={t("common.active")} name="isActive" valuePropName="checked">
                 <Switch />
               </Form.Item>
-              <Button type="primary" htmlType="submit" loading={saving} disabled={!isAdmin}>
-                Save Rule
+              <Button type="primary" htmlType="submit" loading={saving} disabled={!hasPermission("feedrules.write")}>
+                {t("common.save")}
               </Button>
             </Form>
           </Card>
         </div>
       ) : (
-        <Typography.Text>Device not found.</Typography.Text>
+        <Typography.Text>{t("common.notFound")}</Typography.Text>
       )}
+
+      <Modal
+        title={t("feeders.pairingCode")}
+        open={pairingOpen}
+        onCancel={() => setPairingOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setPairingOpen(false)}>
+            {t("common.close")}
+          </Button>
+        ]}
+      >
+        <Typography.Paragraph>
+          {t("feeders.pairingProvide")}
+        </Typography.Paragraph>
+        <Card className="section-card" style={{ textAlign: "center" }}>
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            {pairingCode}
+          </Typography.Title>
+          {pairingExpires ? (
+            <Typography.Text type="secondary">
+              {t("feeders.pairingExpires")}: {formatUtc(pairingExpires)}
+            </Typography.Text>
+          ) : (
+            <Typography.Text type="secondary">{t("feeders.pairingNoExpiry")}</Typography.Text>
+          )}
+        </Card>
+      </Modal>
     </Spin>
   );
 };

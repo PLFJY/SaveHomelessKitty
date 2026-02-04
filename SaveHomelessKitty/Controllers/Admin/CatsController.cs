@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SaveHomelessKitty.Data;
@@ -28,6 +29,7 @@ public class CatsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of matched cat IDs.</returns>
     [HttpGet("search")]
+    [Authorize(Policy = "perm:cats.read")]
     public async Task<ActionResult> SearchCats(
         [FromQuery] string query,
         [FromQuery] bool includeInactive = false,
@@ -65,6 +67,7 @@ public class CatsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of cats.</returns>
     [HttpGet]
+    [Authorize(Policy = "perm:cats.read")]
     public async Task<ActionResult> GetCats(CancellationToken cancellationToken)
     {
         var cats = await _db.Cats
@@ -92,6 +95,7 @@ public class CatsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Cat detail or 404 if not found.</returns>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "perm:cats.read")]
     public async Task<ActionResult> GetCat(Guid id, CancellationToken cancellationToken)
     {
         var cat = await _db.Cats.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
@@ -120,6 +124,7 @@ public class CatsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>201 with the new cat ID.</returns>
     [HttpPost]
+    [Authorize(Policy = "perm:cats.write")]
     public async Task<ActionResult> CreateCat([FromBody] CatUpsertRequest request, CancellationToken cancellationToken)
     {
         var nowUtc = DateTime.UtcNow;
@@ -151,6 +156,7 @@ public class CatsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>HTTP 200 when updated.</returns>
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = "perm:cats.write")]
     public async Task<ActionResult> UpdateCat(Guid id, [FromBody] CatUpsertRequest request, CancellationToken cancellationToken)
     {
         var cat = await _db.Cats.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
@@ -168,6 +174,27 @@ public class CatsController : ControllerBase
         cat.IsActive = request.IsActive;
         cat.UpdatedAtUtc = DateTime.UtcNow;
 
+        await _db.SaveChangesAsync(cancellationToken);
+        return Ok();
+    }
+
+    /// <summary>
+    /// Delete a cat profile.
+    /// </summary>
+    /// <param name="id">Cat ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>HTTP 200 when deleted.</returns>
+    [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "perm:cats.write")]
+    public async Task<ActionResult> DeleteCat(Guid id, CancellationToken cancellationToken)
+    {
+        var cat = await _db.Cats.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (cat == null)
+        {
+            return NotFound();
+        }
+
+        _db.Cats.Remove(cat);
         await _db.SaveChangesAsync(cancellationToken);
         return Ok();
     }

@@ -1,15 +1,17 @@
 import { DeviceStatus, DecisionStatus, FeedResult } from "../types/api";
 
-export const deviceStatusLabel = (status: number): string => {
+type Translator = (key: string) => string;
+
+export const deviceStatusLabel = (status: number, t: Translator): string => {
   switch (status) {
     case DeviceStatus.Online:
-      return "Online";
+      return t("status.online");
     case DeviceStatus.Offline:
-      return "Offline";
+      return t("status.offline");
     case DeviceStatus.Error:
-      return "Error";
+      return t("status.error");
     default:
-      return "Unknown";
+      return t("status.unknown");
   }
 };
 
@@ -26,26 +28,26 @@ export const deviceStatusColor = (status: number): string => {
   }
 };
 
-export const decisionLabel = (decision: number): string => {
+export const decisionLabel = (decision: number, t: Translator): string => {
   switch (decision) {
     case DecisionStatus.Allowed:
-      return "Allowed";
+      return t("status.allowed");
     case DecisionStatus.Denied:
-      return "Denied";
+      return t("status.denied");
     default:
-      return "Unknown";
+      return t("status.unknown");
   }
 };
 
-export const feedResultLabel = (result: number): string => {
+export const feedResultLabel = (result: number, t: Translator): string => {
   switch (result) {
     case FeedResult.Success:
-      return "Success";
+      return t("status.success");
     case FeedResult.Failure:
-      return "Failure";
+      return t("status.failure");
     case FeedResult.None:
-      return "Pending";
+      return t("status.pending");
     default:
-      return "Unknown";
+      return t("status.unknown");
   }
 };

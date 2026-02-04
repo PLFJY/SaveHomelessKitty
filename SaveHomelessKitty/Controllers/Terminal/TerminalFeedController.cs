@@ -17,11 +17,13 @@ public class TerminalFeedController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly FeedDecisionService _decisionService;
+    private readonly PasswordHasher _passwordHasher;
 
-    public TerminalFeedController(AppDbContext db, FeedDecisionService decisionService)
+    public TerminalFeedController(AppDbContext db, FeedDecisionService decisionService, PasswordHasher passwordHasher)
     {
         _db = db;
         _decisionService = decisionService;
+        _passwordHasher = passwordHasher;
     }
 
     /// <summary>
@@ -47,23 +49,17 @@ public class TerminalFeedController : ControllerBase
 
         if (device == null)
         {
-            device = new Device
-            {
-                Id = Guid.NewGuid(),
-                DeviceCode = request.DeviceCode.Trim(),
-                Name = request.DeviceCode.Trim(),
-                CreatedAtUtc = nowUtc,
-                UpdatedAtUtc = nowUtc,
-                LastSeenAtUtc = nowUtc,
-                Status = DeviceStatus.Online
-            };
-            _db.Devices.Add(device);
+            return NotFound("DeviceNotRegistered");
         }
-        else
+        
+        var pairingError = ValidatePairing(device, request.PairingCode, nowUtc);
+        if (pairingError != null)
         {
-            device.LastSeenAtUtc = nowUtc;
-            device.UpdatedAtUtc = nowUtc;
+            return pairingError;
         }
+
+        device.LastSeenAtUtc = nowUtc;
+        device.UpdatedAtUtc = nowUtc;
 
         var response = new TerminalFeedAllowResponse();
         var log = new FeedLog
@@ -134,6 +130,12 @@ public class TerminalFeedController : ControllerBase
             return NotFound("DeviceNotFound");
         }
 
+        var pairingError = ValidatePairing(device, request.PairingCode, DateTime.UtcNow);
+        if (pairingError != null)
+        {
+            return pairingError;
+        }
+
         var log = await _db.FeedLogs.FirstOrDefaultAsync(x => x.Id == request.LogId && x.DeviceId == device.Id, cancellationToken);
         if (log == null)
         {
@@ -186,16 +188,13 @@ public class TerminalFeedController : ControllerBase
 
         if (device == null)
         {
-            device = new Device
-            {
-                Id = Guid.NewGuid(),
-                DeviceCode = request.DeviceCode.Trim(),
-                Name = request.DeviceCode.Trim(),
-                CreatedAtUtc = nowUtc,
-                UpdatedAtUtc = nowUtc,
-                LastSeenAtUtc = nowUtc
-            };
-            _db.Devices.Add(device);
+            return NotFound("DeviceNotRegistered");
+        }
+
+        var pairingError = ValidatePairing(device, request.PairingCode, nowUtc);
+        if (pairingError != null)
+        {
+            return pairingError;
         }
 
         device.Status = request.Status;
@@ -204,10 +203,38 @@ public class TerminalFeedController : ControllerBase
         device.IpAddress = request.IpAddress ?? string.Empty;
         device.FirmwareVersion = request.FirmwareVersion ?? string.Empty;
         device.Note = request.Note ?? string.Empty;
+        device.FoodRemainingGrams = request.FoodRemainingGrams;
+        device.FoodDispensedTodayGrams = request.FoodDispensedTodayGrams;
+        device.FoodDispensedTotalGrams = request.FoodDispensedTotalGrams;
         device.LastSeenAtUtc = nowUtc;
         device.UpdatedAtUtc = nowUtc;
 
         await _db.SaveChangesAsync(cancellationToken);
         return Ok();
+    }
+
+    private ActionResult? ValidatePairing(Device device, string? pairingCode, DateTime nowUtc)
+    {
+        if (string.IsNullOrWhiteSpace(device.PairingCodeHash))
+        {
+            return BadRequest("PairingRequired");
+        }
+
+        if (string.IsNullOrWhiteSpace(pairingCode))
+        {
+            return BadRequest("PairingCodeRequired");
+        }
+
+        if (device.PairingCodeExpiresAtUtc.HasValue && device.PairingCodeExpiresAtUtc.Value < nowUtc)
+        {
+            return Conflict("PairingCodeExpired");
+        }
+
+        if (!_passwordHasher.Verify(pairingCode, device.PairingCodeHash))
+        {
+            return Unauthorized("PairingCodeInvalid");
+        }
+
+        return null;
     }
 }

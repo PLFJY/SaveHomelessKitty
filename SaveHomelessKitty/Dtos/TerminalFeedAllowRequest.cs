@@ -11,6 +11,11 @@ public class TerminalFeedAllowRequest
     public string DeviceCode { get; set; } = string.Empty;
 
     /// <summary>
+    /// Pairing code for device authentication.
+    /// </summary>
+    public string? PairingCode { get; set; }
+
+    /// <summary>
     /// Optional detected cat identifier, if recognized by the device.
     /// </summary>
     public Guid? CatId { get; set; }

@@ -69,6 +69,37 @@ public class Device
     public DateTime? LastSeenAtUtc { get; set; }
 
     /// <summary>
+    /// Remaining food in grams reported by the device.
+    /// </summary>
+    public int? FoodRemainingGrams { get; set; }
+
+    /// <summary>
+    /// Food dispensed today in grams reported by the device.
+    /// </summary>
+    public int? FoodDispensedTodayGrams { get; set; }
+
+    /// <summary>
+    /// Total food dispensed in grams reported by the device.
+    /// </summary>
+    public int? FoodDispensedTotalGrams { get; set; }
+
+    /// <summary>
+    /// Pairing code hash used to authenticate device updates.
+    /// </summary>
+    [MaxLength(256)]
+    public string PairingCodeHash { get; set; } = string.Empty;
+
+    /// <summary>
+    /// UTC time when the pairing code was issued.
+    /// </summary>
+    public DateTime? PairingCodeIssuedAtUtc { get; set; }
+
+    /// <summary>
+    /// UTC time when the pairing code expires (optional).
+    /// </summary>
+    public DateTime? PairingCodeExpiresAtUtc { get; set; }
+
+    /// <summary>
     /// Admin note.
     /// </summary>
     [MaxLength(256)]

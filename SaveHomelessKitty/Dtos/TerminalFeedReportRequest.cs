@@ -18,6 +18,11 @@ public class TerminalFeedReportRequest
     public string DeviceCode { get; set; } = string.Empty;
 
     /// <summary>
+    /// Pairing code for device authentication.
+    /// </summary>
+    public string? PairingCode { get; set; }
+
+    /// <summary>
     /// Final result of the feeding attempt.
     /// </summary>
     public FeedResult Result { get; set; } = FeedResult.None;

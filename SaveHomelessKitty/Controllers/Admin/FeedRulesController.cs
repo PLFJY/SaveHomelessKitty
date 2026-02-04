@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SaveHomelessKitty.Data;
@@ -11,6 +12,7 @@ namespace SaveHomelessKitty.Controllers.Admin;
 /// Admin APIs for managing feeding rules.
 /// </summary>
 [ApiController]
+[Authorize]
 [Route("api/admin/feedrules")]
 public class FeedRulesController : ControllerBase
 {
@@ -27,6 +29,7 @@ public class FeedRulesController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of rules.</returns>
     [HttpGet]
+    [Authorize(Policy = "perm:feedrules.read")]
     public async Task<ActionResult> GetRules(CancellationToken cancellationToken)
     {
         var rules = await _db.FeedRules
@@ -54,6 +57,7 @@ public class FeedRulesController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>HTTP 200 when stored.</returns>
     [HttpPut("default")]
+    [Authorize(Policy = "perm:feedrules.write")]
     public async Task<ActionResult> UpsertDefault([FromBody] FeedRuleUpsertRequest request, CancellationToken cancellationToken)
     {
         var rule = await _db.FeedRules
@@ -86,6 +90,7 @@ public class FeedRulesController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>HTTP 200 when stored.</returns>
     [HttpPut("device/{deviceId:guid}")]
+    [Authorize(Policy = "perm:feedrules.write")]
     public async Task<ActionResult> UpsertDeviceRule(Guid deviceId, [FromBody] FeedRuleUpsertRequest request, CancellationToken cancellationToken)
     {
         var rule = await _db.FeedRules
@@ -118,6 +123,7 @@ public class FeedRulesController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>HTTP 200 when stored.</returns>
     [HttpPut("cat/{catId:guid}")]
+    [Authorize(Policy = "perm:feedrules.write")]
     public async Task<ActionResult> UpsertCatRule(Guid catId, [FromBody] FeedRuleUpsertRequest request, CancellationToken cancellationToken)
     {
         var rule = await _db.FeedRules

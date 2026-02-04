@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SaveHomelessKitty.Data;
@@ -9,6 +10,7 @@ namespace SaveHomelessKitty.Controllers.Admin;
 /// Admin APIs for querying feed logs.
 /// </summary>
 [ApiController]
+[Authorize]
 [Route("api/admin/feedlogs")]
 public class FeedLogsController : ControllerBase
 {
@@ -31,6 +33,7 @@ public class FeedLogsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of feed logs (latest 500).</returns>
     [HttpGet]
+    [Authorize(Policy = "perm:feedlogs.read")]
     public async Task<ActionResult> GetLogs(
         [FromQuery] Guid? deviceId,
         [FromQuery] string? deviceCode,

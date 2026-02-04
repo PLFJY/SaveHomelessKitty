@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SaveHomelessKitty.Data;
@@ -8,6 +9,7 @@ namespace SaveHomelessKitty.Controllers.Admin;
 /// Admin APIs for downloading media files.
 /// </summary>
 [ApiController]
+[Authorize]
 [Route("api/admin/media")]
 public class MediaController : ControllerBase
 {
@@ -25,6 +27,7 @@ public class MediaController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Media file stream or 404 if not found.</returns>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "perm:media.read")]
     public async Task<IActionResult> GetMedia(Guid id, CancellationToken cancellationToken = default)
     {
         var media = await _db.MediaFiles.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);

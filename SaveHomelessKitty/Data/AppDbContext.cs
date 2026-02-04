@@ -24,6 +24,11 @@ public class AppDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
 
     /// <summary>
+    /// Role-to-permission mappings.
+    /// </summary>
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+
+    /// <summary>
     /// User-to-role mappings.
     /// </summary>
     public DbSet<UserRole> UserRoles => Set<UserRole>();
@@ -63,6 +68,15 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Role>(entity =>
         {
             entity.HasIndex(x => x.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<RolePermission>(entity =>
+        {
+            entity.HasKey(x => new { x.RoleId, x.Permission });
+            entity.HasIndex(x => x.Permission);
+            entity.HasOne(x => x.Role)
+                .WithMany(x => x.RolePermissions)
+                .HasForeignKey(x => x.RoleId);
         });
 
         modelBuilder.Entity<UserRole>(entity =>

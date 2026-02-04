@@ -1,46 +1,42 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
-
-export type UserRole = "admin" | "viewer";
-
-export interface AuthUser {
-  name: string;
-  role: UserRole;
-}
+import type { AuthSession, AuthUser } from "../types/auth";
 
 interface AuthContextValue {
+  session: AuthSession | null;
   user: AuthUser | null;
+  token: string | null;
   isAdmin: boolean;
-  login: (name: string, role: UserRole) => void;
+  hasPermission: (permission: string) => boolean;
+  login: (session: AuthSession) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const STORAGE_KEY = "shk_auth";
+const STORAGE_KEY = "shk_session";
 
-const loadUser = (): AuthUser | null => {
+const loadSession = (): AuthSession | null => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       return null;
     }
-    return JSON.parse(raw) as AuthUser;
+    return JSON.parse(raw) as AuthSession;
   } catch {
     return null;
   }
 };
 
 export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(() => loadUser());
+  const [session, setSession] = useState<AuthSession | null>(() => loadSession());
 
-  const login = useCallback((name: string, role: UserRole) => {
-    const payload = { name, role } satisfies AuthUser;
+  const login = useCallback((payload: AuthSession) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch {
       // Ignore storage errors (private mode, blocked storage).
     }
-    setUser(payload);
+    setSession(payload);
   }, []);
 
   const logout = useCallback(() => {
@@ -49,15 +45,25 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     } catch {
       // Ignore storage errors.
     }
-    setUser(null);
+    setSession(null);
   }, []);
 
   const value = useMemo<AuthContextValue>(() => ({
-    user,
-    isAdmin: user?.role === "admin",
+    session,
+    user: session?.user ?? null,
+    token: session?.token ?? null,
+    isAdmin:
+      session?.user.roles?.includes("SuperAdmin") ||
+      session?.user.roles?.includes("Admin") ||
+      false,
+    hasPermission: (permission: string) => {
+      const hasPerm = session?.user.permissions?.includes(permission) ?? false;
+      const isSuper = session?.user.roles?.includes("SuperAdmin") ?? false;
+      return hasPerm || isSuper;
+    },
     login,
     logout
-  }), [user, login, logout]);
+  }), [session, login, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

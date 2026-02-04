@@ -38,4 +38,9 @@ public class Role
     /// Users assigned to this role.
     /// </summary>
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+
+    /// <summary>
+    /// Permission assignments for this role.
+    /// </summary>
+    public ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
 }

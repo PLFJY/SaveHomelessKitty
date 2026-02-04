@@ -35,5 +35,12 @@ pnpm preview
 
 ## Auth
 
-The current UI uses a local storage based demo login (admin/viewer) to enforce
-front-end RBAC. Replace with backend auth when available.
+Login uses the backend `/api/admin/auth/login` endpoint. Session token is stored
+in localStorage and attached to API requests automatically.
+
+Default admin (from backend appsettings):
+
+- Username: `admin`
+- Password: `Admin@12345`
+
+Update these in `SaveHomelessKitty/appsettings.Development.json` and restart the backend.

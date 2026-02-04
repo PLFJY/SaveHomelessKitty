@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from "react";
-import placeholder from "../../assets/placeholder-cat.svg";
+import placeholderLight from "../../assets/placeholder-cat.svg";
+import placeholderDark from "../../assets/placeholder-cat-dark.svg";
+import { useThemeSettings } from "../../context/ThemeContext";
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fallbackSrc?: string;
@@ -7,12 +9,14 @@ interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElemen
 
 const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({ src, fallbackSrc, alt, ...rest }) => {
   const [failed, setFailed] = useState(false);
+  const { effectiveMode } = useThemeSettings();
+  const defaultPlaceholder = effectiveMode === "dark" ? placeholderDark : placeholderLight;
   const safeSrc = useMemo(() => {
     if (!src || failed) {
-      return fallbackSrc || placeholder;
+      return fallbackSrc || defaultPlaceholder;
     }
     return src;
-  }, [src, failed, fallbackSrc]);
+  }, [src, failed, fallbackSrc, defaultPlaceholder]);
 
   return (
     <img
