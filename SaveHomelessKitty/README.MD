@@ -119,6 +119,7 @@ FeedLog
 `POST /api/terminal/feed/allow`
 
 **Request**
+
 ```json
 {
   "deviceCode": "RPI-001",
@@ -131,6 +132,7 @@ FeedLog
 ```
 
 **Response**
+
 ```json
 {
   "allowed": true,
@@ -184,6 +186,7 @@ FeedLog
 ### 7.2 识别流程（推荐）
 
 **首次发现**
+
 1. 终端拍照
 2. Python 判断未知猫
 3. 请求后端创建 Cat（无特征）
@@ -191,6 +194,7 @@ FeedLog
 5. Python 保存特征向量（CatId -> vector）
 
 **再次出现**
+
 1. Python 提取特征
 2. 匹配本地特征库
 3. 得到 CatId + confidence
@@ -203,7 +207,7 @@ FeedLog
 
 启动后访问：
 ```
-http://localhost:5000/swagger
+http://localhost:5248/swagger
 ```
 （端口以控制台输出为准）
 
